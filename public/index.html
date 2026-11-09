@@ -39,10 +39,9 @@ a{color:inherit}
 .mark.shown img{opacity:1;transform:none}
 /* the canister sits a little right of and below the middle of its square:
    that point, not the square's, is the one that goes round and scales */
-.roll{position:absolute;left:0;top:0;width:var(--rw);aspect-ratio:1;margin:calc(var(--rw) * -.547) 0 0 calc(var(--rw) * -.525);transform-origin:52.5% 54.7%;will-change:transform;cursor:grab;user-select:none}
+.roll{position:absolute;left:0;top:0;width:var(--rw);aspect-ratio:1;margin:calc(var(--rw) * -.547) 0 0 calc(var(--rw) * -.525);transform-origin:52.5% 54.7%;will-change:transform;user-select:none}
 .roll .face{position:absolute;inset:0;background-size:1600% 100%;background-repeat:no-repeat;background-position:0 0;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
 .roll:hover .face{transform:translateY(-6px) scale(1.06)}
-.dragging .roll{cursor:grabbing}
 
 /* page */
 main{position:relative;z-index:3;min-height:100svh;display:flex;flex-direction:column;pointer-events:none}
@@ -210,13 +209,13 @@ function film(c, front, now) {
   }
 }
 
-// ---------- motion: steady spin, plus drag / wheel with inertia ----------
-let angle = 0, vel = 0, spread = 0;
-const BASE = REDUCED ? 0 : -0.0035;
+// ---------- motion: the ring stands still until someone joins, then turns ----------
+let angle = 0, vel = 0, spread = 0, spinning = false;
+const SPIN = -0.0035;
 function frame(now) {
   requestAnimationFrame(frame);
   vel *= 0.94;
-  angle += BASE + vel;
+  angle += (spinning ? SPIN : 0) + vel;
   cy += (cyTo - cy) * (REDUCED ? 1 : 0.05);
   mark.style.transform = `translate3d(${cx}px,${cy}px,0)`;
   for (let i = 0; i < N; i++) {
@@ -236,19 +235,6 @@ function frame(now) {
   }
 }
 
-let drag = null;
-addEventListener("pointerdown", e => {
-  if (!e.target.closest(".roll")) return;
-  drag = { x: e.clientX };
-  document.body.classList.add("dragging");
-});
-addEventListener("pointermove", e => {
-  if (!drag) return;
-  vel = (e.clientX - drag.x) * 0.0009;
-  drag.x = e.clientX;
-}, { passive: true });
-addEventListener("pointerup", () => { drag = null; document.body.classList.remove("dragging"); });
-addEventListener("wheel", e => { if (!REDUCED) vel -= Math.sign(e.deltaY) * 0.004; }, { passive: true });
 
 // ---------- intro: the mark in the middle of the screen, the rolls come out
 // of it, and the whole ring rises to its place over the words ----------
@@ -317,7 +303,11 @@ form.addEventListener("submit", async e => {
     return;
   }
   form.classList.add("done");
-  vel = -0.08;   // a quick spin as a thank you
+  // The thank you: the ring sets off with a push, and keeps turning.
+  if (!REDUCED) {
+    spinning = true;
+    vel = -0.08;
+  }
 });
 </script>
 </body>
