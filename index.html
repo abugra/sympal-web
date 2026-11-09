@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sympal | Waitlist</title>
-<meta name="description" content="Seven rolls of film, in your iPhone's camera. See the look before you shoot.">
+<meta name="description" content="Your new pro camera.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;800&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@ body{font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smooth
 a{color:inherit}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* top bar: Sympal. starts in the middle of the ring and settles here */
+/* top bar: the logo starts in the middle of the ring and settles here */
 .top{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:center;padding:6px var(--gutter);pointer-events:none}
 /* set at 36px and scaled down to 14px in the header: crisp at both sizes */
 .logo{pointer-events:auto;font-weight:500;font-size:36px;line-height:1;letter-spacing:-.02em;text-decoration:none;transform-origin:50% 50%;transform:scale(.39)}
@@ -82,7 +82,7 @@ form.join.done .done-note{display:block}
 </head>
 <body>
 <header class="top">
-  <a class="logo" href="#" aria-label="Sympal">Sympal.</a>
+  <a class="logo" href="#" aria-label="Sympal">sympal</a>
 </header>
 
 <div class="ring" id="ring" aria-hidden="true"></div>
@@ -91,7 +91,7 @@ form.join.done .done-note{display:block}
   <div class="mark-slot" id="slot"></div>
   <section class="content">
     <h1 class="sr">Sympal</h1>
-    <p class="tagline">Seven rolls of film, in your iPhone's camera. <em>See the look before you shoot.</em></p>
+    <p class="tagline">Your new pro camera.</p>
 
     <form class="join" novalidate>
       <label class="field">
@@ -223,7 +223,7 @@ addEventListener("pointermove", e => {
 addEventListener("pointerup", () => { drag = null; document.body.classList.remove("dragging"); });
 addEventListener("wheel", e => { if (!REDUCED) vel -= Math.sign(e.deltaY) * 0.004; }, { passive: true });
 
-// ---------- intro: Sympal. in the middle, rolls come out of it, Sympal. goes up ----------
+// ---------- intro: the logo in the middle, rolls come out of it, the logo goes up ----------
 function logoOffset() {
   const r = logo.getBoundingClientRect();
   return `translate(${cx - (r.left + r.width / 2)}px,${innerHeight / 2 - (r.top + r.height / 2)}px) scale(1)`;
