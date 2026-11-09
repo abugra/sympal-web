@@ -7,6 +7,14 @@
 // The table is made on first use, so the D1 database only has to exist and
 // be bound as `DB` (see wrangler.jsonc).
 
+import { EmailMessage } from "cloudflare:email";
+
+// Each new address is also mailed to the maker, from an address on ahm.et,
+// where Email Routing sends; the binding in wrangler.jsonc only ever lets it
+// write to his own, verified address.
+const NOTIFY_FROM = "waitlist@ahm.et";
+const NOTIFY_TO = "abavcilar@gmail.com";
+
 // Word for word what the box on the page says. If one changes, change both:
 // this is the record of what each person agreed to.
 const CONSENT = "Sympal may keep this address to send me a TestFlight invite, and for nothing else";
@@ -19,7 +27,7 @@ const json = (body, status = 200, headers = {}) =>
     headers: { "content-type": "application/json", "cache-control": "no-store", ...headers }
   });
 
-async function join(request, env) {
+async function join(request, env, ctx) {
   let form;
   try {
     form = await request.formData();
@@ -42,19 +50,48 @@ async function join(request, env) {
   ).run();
   // Joining twice keeps the first consent and says nothing different, so the
   // page never tells anyone whether an address is already on the list.
-  await env.DB.prepare(
+  const added = await env.DB.prepare(
     "INSERT OR IGNORE INTO waitlist (email, consented_at, consent) VALUES (?1, ?2, ?3)"
   ).bind(email, new Date().toISOString(), CONSENT).run();
+
+  // Only for someone new, and after the answer has gone: a mail that cannot
+  // be sent must not cost anyone their place on the list.
+  if (added.meta.changes > 0 && env.NOTIFY) ctx.waitUntil(notify(env, email));
 
   return json({ ok: true });
 }
 
+async function notify(env, email) {
+  try {
+    const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM waitlist").first();
+    const n = row?.n ?? 0;
+    // The address passed the check above, which allows no spaces or line
+    // breaks, so it cannot add a header of its own.
+    const raw = [
+      `From: Sympal waitlist <${NOTIFY_FROM}>`,
+      `To: <${NOTIFY_TO}>`,
+      `Subject: New on the Sympal waitlist: ${email}`,
+      `Date: ${new Date().toUTCString()}`,
+      `Message-ID: <${crypto.randomUUID()}@ahm.et>`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=utf-8",
+      "",
+      `${email} joined the TestFlight waitlist`,
+      "",
+      `That makes ${n} on the list`
+    ].join("\r\n");
+    await env.NOTIFY.send(new EmailMessage(NOTIFY_FROM, NOTIFY_TO, raw));
+  } catch (error) {
+    console.error("Waitlist: the mail about a new address was not sent", error);
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (pathname === "/api/join") {
       if (request.method !== "POST") return json({ error: "method not allowed" }, 405, { allow: "POST" });
-      return join(request, env);
+      return join(request, env, ctx);
     }
     // Anything else that is not a file: the assets say so (a 404).
     return env.ASSETS.fetch(request);

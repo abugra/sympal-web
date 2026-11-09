@@ -7,8 +7,21 @@ The TestFlight waitlist page for Sympal, at sympal.ahm.et.
 - `src/worker.js`: a Cloudflare Worker for the one request a file cannot
   answer, `POST /api/join`. It keeps the address in D1, with the time and
   the words it was agreed to. Nothing else.
-- `wrangler.jsonc`: the Worker (`sympal-web`), its files, and the D1
-  database `sympal-waitlist` bound as `DB`.
+- `wrangler.jsonc`: the Worker (`sympal-web`), its files, the D1
+  database `sympal-waitlist` bound as `DB`, and `NOTIFY`, which mails
+  abavcilar@gmail.com from waitlist@ahm.et for each new address.
+
+## Before the first deploy with NOTIFY
+
+Mail from a Worker goes through Cloudflare Email Routing, once:
+
+1. The `ahm.et` zone → Email → Email Routing → enable it. Cloudflare adds
+   MX and SPF records for ahm.et: if ahm.et already takes mail somewhere
+   else, stop here, as this would take that over.
+2. Email Routing → Destination addresses → add abavcilar@gmail.com, and
+   click the link in the mail Cloudflare sends.
+
+Without them a sign-up is still kept; only the mail about it is lost.
 
 ## Deploying
 

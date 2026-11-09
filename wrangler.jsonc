@@ -17,5 +17,13 @@
       "database_name": "sympal-waitlist",
       "database_id": "c3a67300-866c-454c-aac8-f2ef467c9559"
     }
+  ],
+  // A mail to the maker for each new address. Needs Email Routing on ahm.et
+  // and this address verified there; it can write to no other.
+  "send_email": [
+    {
+      "name": "NOTIFY",
+      "destination_address": "abavcilar@gmail.com"
+    }
   ]
 }
