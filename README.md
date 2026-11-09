@@ -20,6 +20,9 @@ Mail from a Worker goes through Cloudflare Email Routing, once:
    else, stop here, as this would take that over.
 2. Email Routing → Destination addresses → add abavcilar@gmail.com, and
    click the link in the mail Cloudflare sends.
+3. Email Routing → Routing rules → send sympal@ahm.et to
+   abavcilar@gmail.com. It is the address the privacy policy gives for
+   questions and removals.
 
 Without them a sign-up is still kept; only the mail about it is lost.
 
