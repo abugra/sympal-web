@@ -1,32 +1,29 @@
 # sympal-web
 
-The TestFlight waitlist page for Sympal, at camera.ahm.et.
+The TestFlight waitlist page for Sympal, at sympal.ahm.et.
 
 - `public/`: the site. `index.html`, the privacy policy, the Sympal mark
   and one strip of sixteen frames for each roll of film. No build step.
-- `functions/api/join.js`: takes the form and keeps the address in a D1
-  database, with the time and the words it was agreed to. Nothing else.
+- `src/worker.js`: a Cloudflare Worker for the one request a file cannot
+  answer, `POST /api/join`. It keeps the address in D1, with the time and
+  the words it was agreed to. Nothing else.
+- `wrangler.jsonc`: the Worker (`sympal-web`), its files, and the D1
+  database `sympal-waitlist` bound as `DB`.
 
-## Deploying on Cloudflare Pages
+## Deploying
 
-Build settings:
+```sh
+npx wrangler deploy
+```
 
-- Framework preset: None
-- Build command: (empty)
-- Build output directory: `public`
-
-The waitlist needs a D1 database bound to the project:
-
-1. Storage & Databases → D1 → Create, named `sympal-waitlist`.
-2. The Pages project → Settings → Bindings → Add → D1 database.
-   Variable name `DB`, database `sympal-waitlist`.
-3. Deploy again: bindings only reach a new deployment.
+If the repository is connected to the Worker in Cloudflare (Workers
+Builds), a push to `main` does this by itself.
 
 The table makes itself on the first sign-up.
 
 ## The list
 
-In D1 → `sympal-waitlist` → Console:
+In Cloudflare: Storage & Databases → D1 → `sympal-waitlist` → Console:
 
 ```sql
 SELECT email, consented_at FROM waitlist ORDER BY consented_at;
@@ -53,13 +50,15 @@ DROP TABLE waitlist;
 
 ## Changing the wording
 
-The consent line on the page and `CONSENT` in `functions/api/join.js` are
-the same words: the second is the record of what each person agreed to.
-Change one, change both, and update `public/privacy.html` if what is kept or
-why changes.
+The consent line on the page and `CONSENT` in `src/worker.js` are the same
+words: the second is the record of what each person agreed to. Change one,
+change both, and update `public/privacy.html` if what is kept or why
+changes.
 
 ## Running it locally
 
 ```sh
-npx wrangler pages dev public --d1 DB=sympal-waitlist
+npx wrangler dev
 ```
+
+This uses a local copy of the database, not the real list.

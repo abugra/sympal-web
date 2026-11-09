@@ -1,0 +1,21 @@
+// The Sympal waitlist page: the files in public/, and a small Worker for the
+// one request they cannot answer, the form. Deployed with `npx wrangler deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The name of the Worker already serving sympal.ahm.et: deploys update it
+  // in place, and keep its domain.
+  "name": "sympal-web",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sympal-waitlist",
+      "database_id": "c3a67300-866c-454c-aac8-f2ef467c9559"
+    }
+  ]
+}

@@ -1,9 +1,11 @@
-// POST /api/join — one address onto the TestFlight waitlist.
+// The site is the files in public/, which Cloudflare serves before this
+// Worker is ever reached. The Worker answers the one thing a file cannot:
+// POST /api/join, one address onto the TestFlight waitlist.
 //
 // Kept to what consent needs and no more: the address, when it was given,
 // and the words it was given to. No IP address, no browser, nothing else.
 // The table is made on first use, so the D1 database only has to exist and
-// be bound to this project as `DB`.
+// be bound as `DB` (see wrangler.jsonc).
 
 // Word for word what the box on the page says. If one changes, change both:
 // this is the record of what each person agreed to.
@@ -11,13 +13,13 @@ const CONSENT = "Sympal may keep this address to send me a TestFlight invite, an
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const json = (body, status = 200) =>
+const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" }
+    headers: { "content-type": "application/json", "cache-control": "no-store", ...headers }
   });
 
-export async function onRequestPost({ request, env }) {
+async function join(request, env) {
   let form;
   try {
     form = await request.formData();
@@ -46,3 +48,15 @@ export async function onRequestPost({ request, env }) {
 
   return json({ ok: true });
 }
+
+export default {
+  async fetch(request, env) {
+    const { pathname } = new URL(request.url);
+    if (pathname === "/api/join") {
+      if (request.method !== "POST") return json({ error: "method not allowed" }, 405, { allow: "POST" });
+      return join(request, env);
+    }
+    // Anything else that is not a file: the assets say so (a 404).
+    return env.ASSETS.fetch(request);
+  }
+};
