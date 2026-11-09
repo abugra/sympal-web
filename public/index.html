@@ -66,6 +66,10 @@ form.join{width:100%;display:flex;flex-direction:column;gap:14px}
 .consent input:checked{background:var(--ink);box-shadow:none}
 .consent input:checked::after{content:"";width:4px;height:8px;border:solid var(--bg);border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .consent input:focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+.consent a{color:var(--ink);text-decoration:none;white-space:nowrap}
+.consent a:hover{text-decoration:underline}
+/* for bots only: people never see it, so anything in it was not typed by one */
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .msg{min-height:1.2em;padding:0 8px;font-size:12.5px}
 .msg.err{color:var(--err)}
 .done-note{display:none;font-size:18px;letter-spacing:-.01em;text-align:center}
@@ -107,8 +111,9 @@ form.join.done .done-note{display:block}
       </label>
       <label class="consent">
         <input type="checkbox" name="consent" required>
-        <span>Sympal may keep this address to send me a TestFlight invite, and for nothing else</span>
+        <span>Sympal may keep this address to send me a TestFlight invite, and for nothing else · <a href="privacy">Privacy policy</a></span>
       </label>
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="msg" role="status" aria-live="polite"></div>
       <p class="done-note" role="status">You're on the list, your TestFlight invite will come by email</p>
     </form>
@@ -117,7 +122,7 @@ form.join.done .done-note{display:block}
 
 <footer class="foot">
   <span>© 2026 Sympal</span>
-  <a href="#">Privacy policy</a>
+  <a href="privacy">Privacy policy</a>
 </footer>
 
 <script>
@@ -271,9 +276,8 @@ rolls.forEach(c => (c.el.style.opacity = 0));
 intro();
 
 // ---------- waitlist form ----------
-// The waitlist service's form address (Buttondown, Loops, Formspree…).
-// Empty, the form thanks people and sends nothing anywhere.
-const ENDPOINT = "";
+// functions/api/join.js keeps the address in the site's own D1 database.
+const ENDPOINT = "/api/join";
 const form = $("form.join");
 form.addEventListener("submit", async e => {
   e.preventDefault();
@@ -286,23 +290,19 @@ form.addEventListener("submit", async e => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err = "That email address doesn't look right";
   else if (!form.consent.checked) err = "Tick the box so we can send you the invite";
   if (err) { msg.textContent = err; msg.classList.add("err"); return; }
-  if (ENDPOINT) {
-    button.disabled = true;
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: new URLSearchParams({ email })
-      });
-      if (!res.ok) throw new Error(res.status);
-    } catch {
-      msg.textContent = "Couldn't add you just now, please try again";
-      msg.classList.add("err");
-      button.disabled = false;
-      return;
-    }
-  } else {
-    console.warn("Waitlist: no ENDPOINT set, so this address was not saved");
+  button.disabled = true;
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: new URLSearchParams({ email, consent: "yes", website: form.website.value })
+    });
+    if (!res.ok) throw new Error(res.status);
+  } catch {
+    msg.textContent = "Couldn't add you just now, please try again";
+    msg.classList.add("err");
+    button.disabled = false;
+    return;
   }
   form.classList.add("done");
   vel = -0.08;   // a quick spin as a thank you
