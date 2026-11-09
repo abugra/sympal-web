@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sympal | Waitlist</title>
+<meta name="description" content="Seven rolls of film, in your iPhone's camera. See the look before you shoot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;
+  --ink:#111111;
+  --muted:#8b8b8b;
+  --line:#e2e2e2;
+  --sans:"Inter Tight",system-ui,sans-serif;
+  --gutter:clamp(16px,2.4vw,32px);
+  --rw:clamp(80px,8.4vw,128px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top bar: Sympal. starts in the middle of the ring and settles here */
+.top{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:center;padding:6px var(--gutter);pointer-events:none}
+/* set at 36px and scaled down to 14px in the header: crisp at both sizes */
+.logo{pointer-events:auto;font-weight:500;font-size:36px;line-height:1;letter-spacing:-.02em;text-decoration:none;transform-origin:50% 50%;transform:scale(.39)}
+.logo.moving{transition:transform 1.2s cubic-bezier(.7,0,.2,1)}
+
+/* the ring: rolls of film, each a strip of sixteen rendered frames —
+   0 lying on its side, 7 standing, 15 with its film pulled out */
+.ring{position:fixed;left:0;top:0;width:0;height:0;z-index:2}
+.roll{position:absolute;left:0;top:0;width:var(--rw);aspect-ratio:1;margin:calc(var(--rw) / -2) 0 0 calc(var(--rw) / -2);will-change:transform;cursor:grab;user-select:none}
+.roll .face{position:absolute;inset:0;background-size:1600% 100%;background-repeat:no-repeat;background-position:0 0;transition:transform .35s cubic-bezier(.2,.7,.2,1),filter .35s}
+.roll:hover .face{transform:translateY(-6px) scale(1.06);filter:drop-shadow(0 14px 12px rgba(0,0,0,.16))}
+.dragging .roll{cursor:grabbing}
+
+/* page */
+main{position:relative;z-index:3;min-height:100svh;display:flex;flex-direction:column;pointer-events:none}
+.mark-slot{flex:none;height:clamp(330px,56svh,580px)}
+.content{pointer-events:auto;width:min(520px,100% - 2 * var(--gutter));margin:0 auto;padding-bottom:72px;display:flex;flex-direction:column;gap:22px;opacity:0;transform:translateY(14px);transition:opacity 1.1s,transform 1.1s cubic-bezier(.2,.7,.2,1)}
+.ready .content{opacity:1;transform:none}
+.tagline{font-size:clamp(19px,1.8vw,23px);line-height:1.3;letter-spacing:-.015em;text-align:center}
+.tagline em{font-style:normal;color:var(--muted)}
+
+form.join{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;align-items:center;border-bottom:1px solid var(--line);transition:border-color .2s}
+.field:focus-within{border-color:var(--ink)}
+.field input{flex:1;min-width:0;border:0;background:none;outline:0;font:inherit;font-size:16px;padding:14px 0;color:var(--ink)}
+.field input::placeholder{color:#a8a8a8}
+.field button{flex:none;border:0;background:none;font:inherit;font-weight:500;font-size:14px;letter-spacing:-.01em;padding:14px 0 14px 16px;cursor:pointer;color:var(--ink);transition:color .2s}
+.field button::after{content:" →";display:inline-block;transition:transform .2s}
+.field button:hover{color:var(--muted)}
+.field button:hover::after{transform:translateX(3px)}
+.field button:disabled{color:var(--muted);cursor:default}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:#777;cursor:pointer}
+.consent input{appearance:none;flex:none;width:15px;height:15px;margin-top:1px;border:1px solid #bdbdbd;display:grid;place-items:center;cursor:pointer;background:#fff}
+.consent input:checked{background:var(--ink);border-color:var(--ink)}
+.consent input:checked::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.consent input:focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+.msg{min-height:1.2em;font-size:12.5px}
+.msg.err{color:#c4321f}
+.done-note{display:none;font-size:20px;letter-spacing:-.015em;text-align:center}
+form.join.done > :not(.done-note){display:none}
+form.join.done .done-note{display:block}
+
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;justify-content:center;gap:6px;padding:12px var(--gutter);font-size:11px;color:var(--muted);pointer-events:none}
+.foot span + a::before{content:"·";margin-right:6px}
+.foot a{pointer-events:auto;text-decoration:none}
+.foot a:hover{color:var(--ink)}
+
+@media (max-width:700px){
+  :root{--rw:68px}
+  .mark-slot{height:clamp(280px,48svh,420px)}
+  .content{padding-bottom:88px}
+  .foot{background:linear-gradient(transparent,#fff 40%)}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="#" aria-label="Sympal">Sympal.</a>
+</header>
+
+<div class="ring" id="ring" aria-hidden="true"></div>
+
+<main>
+  <div class="mark-slot" id="slot"></div>
+  <section class="content">
+    <h1 class="sr">Sympal</h1>
+    <p class="tagline">Seven rolls of film, in your iPhone's camera. <em>See the look before you shoot.</em></p>
+
+    <form class="join" novalidate>
+      <label class="field">
+        <span class="sr">Email address</span>
+        <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+        <button type="submit">Join</button>
+      </label>
+      <label class="consent">
+        <input type="checkbox" name="consent" required>
+        <span>I agree that Sympal may keep this address to tell me when the app launches. It's used for nothing else, and it's never shared.</span>
+      </label>
+      <div class="msg" role="status" aria-live="polite"></div>
+      <p class="done-note" role="status">You're on the list. We'll write when it launches.</p>
+    </form>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>© 2026 Sympal</span>
+  <a href="#">Privacy policy</a>
+</footer>
+
+<script>
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const ring = $("#ring"), slot = $("#slot"), logo = $(".logo");
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const clamp01 = t => Math.min(Math.max(t, 0), 1);
+const ease = t => 1 - Math.pow(1 - clamp01(t), 3);
+
+// ---------- the rolls: every look twice, the colours spread round the ring ----------
+const LOOKS = ["800X", "C800", "GR100", "S70", "A400", "HG6", "T400"];
+const LYING = 0, STANDING = 7, OPEN = 15, LAST = 15;
+const rolls = [...LOOKS, ...LOOKS].map(look => {
+  const el = document.createElement("div");
+  el.className = "roll";
+  el.innerHTML = `<div class="face" style="background-image:url(rolls/${look}.webp)"></div>`;
+  ring.appendChild(el);
+  const roll = { el, face: el.firstChild, spawn: 0, frame: LYING, shown: -1, next: 0, hover: false };
+  el.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") roll.hover = true; });
+  el.addEventListener("pointerleave", () => { roll.hover = false; });
+  return roll;
+});
+const N = rolls.length, STEP = (Math.PI * 2) / N;
+// The roll at the front of the ring is the chosen one, as in the app.
+const FRONT = Math.cos(STEP / 2);
+
+// Loaded before the intro, so no roll comes out of the logo empty.
+const sprites = Promise.all(LOOKS.map(look => new Promise(done => {
+  const img = new Image();
+  img.onload = img.onerror = done;
+  img.src = `rolls/${look}.webp`;
+})));
+
+// ---------- ring geometry ----------
+let cx = 0, cy = innerHeight / 2, cyTo = cy, centred = true, rx = 300, ry = 80, rz = 200;
+function layout() {
+  const r = slot.getBoundingClientRect();
+  cx = innerWidth / 2;
+  cyTo = centred ? innerHeight / 2 : r.top + r.height * 0.52;
+  const small = innerWidth < 700;
+  rx = Math.min(innerWidth * (small ? 0.4 : 0.33), 470);
+  ry = rx * (small ? 0.5 : 0.22);
+  rz = rx * 0.75;
+}
+layout();
+addEventListener("resize", layout);
+addEventListener("scroll", layout, { passive: true });
+
+// ---------- a roll's frame: it stands up as it comes out, and pulls its film
+// out at the front (or under the pointer), then winds it back ----------
+function film(c, front, now) {
+  let target;
+  if (c.spawn < 1) {
+    c.frame = Math.min(STANDING, Math.floor(clamp01(c.spawn) * (STANDING + 1)));
+    target = c.frame;
+  } else {
+    target = front || c.hover ? OPEN : STANDING;
+  }
+  if (REDUCED) {
+    c.frame = target;
+  } else if (c.frame !== target && now >= c.next) {
+    const out = target > c.frame;
+    c.frame += out ? 1 : -1;
+    // the set's own rate going out, twice that winding back
+    c.next = now + (out ? 1000 / 12 : 1000 / 24);
+  }
+  if (c.frame !== c.shown) {
+    c.face.style.backgroundPosition = `${(c.frame / LAST) * 100}% 0`;
+    c.shown = c.frame;
+  }
+}
+
+// ---------- motion: steady spin, plus drag / wheel with inertia ----------
+let angle = 0, vel = 0, spread = 0;
+const BASE = REDUCED ? 0 : -0.0035;
+function frame(now) {
+  requestAnimationFrame(frame);
+  vel *= 0.94;
+  angle += BASE + vel;
+  cy += (cyTo - cy) * (REDUCED ? 1 : 0.05);
+  const persp = 1600;
+  for (let i = 0; i < N; i++) {
+    const c = rolls[i];
+    const t = i * STEP + angle;
+    // seen slightly from above: the front of the ring sits lower
+    const x = Math.sin(t) * rx, y = Math.cos(t) * ry + Math.sin(t * 2) * ry * 0.12, z = Math.cos(t) * rz;
+    const s = ease(c.spawn);
+    const k = persp / (persp - z * spread);                   // perspective scale
+    const px = cx + x * spread * k, py = cy + y * spread * k;
+    c.el.style.transform = `translate3d(${px}px,${py}px,0) scale(${(0.35 + 0.65 * s) * k * (0.78 + 0.22 * spread)})`;
+    c.el.style.opacity = s * (0.3 + 0.7 * (z / rz + 1) / 2);   // back of the ring fades
+    c.el.style.zIndex = Math.round(1000 + z);
+    film(c, spread > 0.99 && Math.cos(t) > FRONT, now);
+  }
+}
+
+let drag = null;
+addEventListener("pointerdown", e => {
+  if (!e.target.closest(".roll")) return;
+  drag = { x: e.clientX };
+  document.body.classList.add("dragging");
+});
+addEventListener("pointermove", e => {
+  if (!drag) return;
+  vel = (e.clientX - drag.x) * 0.0009;
+  drag.x = e.clientX;
+}, { passive: true });
+addEventListener("pointerup", () => { drag = null; document.body.classList.remove("dragging"); });
+addEventListener("wheel", e => { if (!REDUCED) vel -= Math.sign(e.deltaY) * 0.004; }, { passive: true });
+
+// ---------- intro: Sympal. in the middle, rolls come out of it, Sympal. goes up ----------
+function logoOffset() {
+  const r = logo.getBoundingClientRect();
+  return `translate(${cx - (r.left + r.width / 2)}px,${innerHeight / 2 - (r.top + r.height / 2)}px) scale(1)`;
+}
+
+async function intro() {
+  await Promise.all([document.fonts.ready, sprites]);
+  layout();
+  requestAnimationFrame(frame);
+
+  if (REDUCED) {
+    rolls.forEach(c => (c.spawn = 1));
+    spread = 1;
+    centred = false;
+    layout();
+    logo.style.opacity = 1;
+    document.documentElement.classList.add("ready");
+    return;
+  }
+
+  logo.style.transform = logoOffset();
+  await wait(50);
+  logo.style.transition = "opacity .6s";
+  logo.style.opacity = 1;
+  await wait(800);
+  logo.style.transition = "";
+  // rolls spring out of the logo one after another, standing up as they go
+  const start = performance.now();
+  (function grow(now) {
+    const t = now - start;
+    spread = ease(t / 1600);
+    rolls.forEach((c, i) => (c.spawn = (t - i * 60) / 700));
+    if (t < 2400) requestAnimationFrame(grow);
+  })(start);
+  await wait(1700);
+  logo.classList.add("moving");
+  logo.style.transform = "";
+  centred = false;
+  layout();
+  await wait(900);
+  document.documentElement.classList.add("ready");
+  await wait(400);
+  logo.classList.remove("moving");
+}
+rolls.forEach(c => (c.el.style.opacity = 0));
+logo.style.opacity = 0;   // hidden until the intro places it
+intro();
+
+// ---------- waitlist form ----------
+// The waitlist service's form address (Buttondown, Loops, Formspree…).
+// Empty, the form thanks people and sends nothing anywhere.
+const ENDPOINT = "";
+const form = $("form.join");
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = form.querySelector(".msg");
+  const button = form.querySelector("button");
+  msg.className = "msg";
+  msg.textContent = "";
+  const email = form.email.value.trim();
+  let err = "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err = "That email address doesn't look right.";
+  else if (!form.consent.checked) err = "Please tick the consent box.";
+  if (err) { msg.textContent = err; msg.classList.add("err"); return; }
+  if (ENDPOINT) {
+    button.disabled = true;
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: new URLSearchParams({ email })
+      });
+      if (!res.ok) throw new Error(res.status);
+    } catch {
+      msg.textContent = "Couldn't add you just now. Please try again.";
+      msg.classList.add("err");
+      button.disabled = false;
+      return;
+    }
+  } else {
+    console.warn("Waitlist: no ENDPOINT set, so this address was not saved.");
+  }
+  form.classList.add("done");
+  vel = -0.08;   // a quick spin as a thank you
+});
+</script>
+</body>
+</html>
