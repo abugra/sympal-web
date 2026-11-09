@@ -151,13 +151,15 @@ const N = rolls.length, STEP = (Math.PI * 2) / N;
 // The roll at the front of the ring is the chosen one, as in the app.
 const FRONT = Math.cos(STEP / 2);
 
-// Loaded before the intro, so nothing comes out of the mark empty.
+// The mark is waited for before anything shows. The rolls load behind it,
+// for whenever someone joins, without holding the page up.
 const load = src => new Promise(done => {
   const img = new Image();
   img.onload = img.onerror = done;
   img.src = src;
 });
-const images = Promise.all([...LOOKS.map(look => load(`rolls/${look}.webp`)), load("sympal.webp")]);
+const markImage = load("sympal.webp");
+const sprites = Promise.all(LOOKS.map(look => load(`rolls/${look}.webp`)));
 
 // ---------- ring geometry ----------
 // How much nearer the front of the ring is than the back: a roll at the
@@ -165,7 +167,7 @@ const images = Promise.all([...LOOKS.map(look => load(`rolls/${look}.webp`)), lo
 // much smaller. Only the size: the places stay round the mark, so it sits
 // in the middle of the ring rather than near its back.
 const DEPTH = 0.35;
-let cx = 0, cy = innerHeight / 2, cyTo = cy, centred = true, rx = 300, ry = 80, rz = 200;
+let cx = 0, cy = innerHeight / 2, cyTo = cy, rx = 300, ry = 80, rz = 200;
 function layout() {
   const r = slot.getBoundingClientRect();
   const small = innerWidth < 700;
@@ -179,7 +181,7 @@ function layout() {
   rz = rx * 0.6;
   // The mark is the ring's middle, and the ring as drawn — larger at the
   // front — sits in the middle of the slot.
-  cyTo = centred ? innerHeight / 2 : r.top + r.height / 2 - (rw * DEPTH) / 2;
+  cyTo = r.top + r.height / 2 - (rw * DEPTH) / 2;
 }
 layout();
 addEventListener("resize", layout);
@@ -193,7 +195,7 @@ function film(c, front, now) {
     c.frame = Math.min(STANDING, Math.floor(clamp01(c.spawn) * (STANDING + 1)));
     target = c.frame;
   } else {
-    target = front || c.hover ? OPEN : STANDING;
+    target = front || (c.hover && spread > 0.99) ? OPEN : STANDING;
   }
   if (REDUCED) {
     c.frame = target;
@@ -209,7 +211,7 @@ function film(c, front, now) {
   }
 }
 
-// ---------- motion: the ring stands still until someone joins, then turns ----------
+// ---------- motion: the ring turns once someone has joined ----------
 let angle = 0, vel = 0, spread = 0, spinning = false;
 const SPIN = -0.0035;
 function frame(now) {
@@ -236,27 +238,32 @@ function frame(now) {
 }
 
 
-// ---------- intro: the mark in the middle of the screen, the rolls come out
-// of it, and the whole ring rises to its place over the words ----------
+// ---------- intro: the mark alone, in its place over the words. The rolls
+// stay inside it until someone joins ----------
 async function intro() {
-  await images;
+  await markImage;
   layout();
+  cy = cyTo;
   requestAnimationFrame(frame);
+  await wait(REDUCED ? 0 : 50);
+  mark.classList.add("shown");
+  await wait(REDUCED ? 0 : 500);
+  document.documentElement.classList.add("ready");
+}
+rolls.forEach(c => (c.el.style.opacity = 0));
+intro();
 
+// ---------- the thank you: the rolls spring out of the mark one after
+// another, standing up as they go, and the ring sets off turning ----------
+async function reveal() {
+  await sprites;
   if (REDUCED) {
     rolls.forEach(c => (c.spawn = 1));
     spread = 1;
-    centred = false;
-    layout();
-    mark.classList.add("shown");
-    document.documentElement.classList.add("ready");
     return;
   }
-
-  await wait(50);
-  mark.classList.add("shown");
-  await wait(850);
-  // rolls spring out of the mark one after another, standing up as they go
+  spinning = true;
+  vel = -0.04;
   const start = performance.now();
   (function grow(now) {
     const t = now - start;
@@ -264,14 +271,7 @@ async function intro() {
     rolls.forEach((c, i) => (c.spawn = (t - i * 110) / 700));
     if (t < 2400) requestAnimationFrame(grow);
   })(start);
-  await wait(1700);
-  centred = false;
-  layout();
-  await wait(900);
-  document.documentElement.classList.add("ready");
 }
-rolls.forEach(c => (c.el.style.opacity = 0));
-intro();
 
 // ---------- waitlist form ----------
 // functions/api/join.js keeps the address in the site's own D1 database.
@@ -303,11 +303,7 @@ form.addEventListener("submit", async e => {
     return;
   }
   form.classList.add("done");
-  // The thank you: the ring sets off with a push, and keeps turning.
-  if (!REDUCED) {
-    spinning = true;
-    vel = -0.08;
-  }
+  reveal();
 });
 </script>
 </body>
