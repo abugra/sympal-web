@@ -6,7 +6,8 @@ The TestFlight waitlist page for Sympal, at sympal.ahm.et.
   and one strip of sixteen frames for each roll of film. No build step.
 - `src/worker.js`: a Cloudflare Worker for the one request a file cannot
   answer, `POST /api/join`. It keeps the address in D1, with the time and
-  the words it was agreed to. Nothing else.
+  the words it was agreed to. It also turns `/?open=beta` into a redirect
+  to the public TestFlight invite (`OPEN` in the same file).
 - `wrangler.jsonc`: the Worker (`sympal-web`), its files, the D1
   database `sympal-waitlist` bound as `DB`, and `NOTIFY`, which mails
   abavcilar@gmail.com from waitlist@ahm.et for each new address.

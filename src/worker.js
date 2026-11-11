@@ -19,6 +19,12 @@ const NOTIFY_TO = "abavcilar@gmail.com";
 // this is the record of what each person agreed to.
 const CONSENT = "Sympal may keep this address to send me a TestFlight invite, and for nothing else";
 
+// Short links on the home page: sympal.ahm.et/?open=beta goes straight to
+// the public TestFlight invite. Any other value, or none, is the page itself.
+const OPEN = Object.assign(Object.create(null), {
+  beta: "https://testflight.apple.com/join/21z7HFkk"
+});
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const json = (body, status = 200, headers = {}) =>
@@ -88,7 +94,12 @@ async function notify(env, email) {
 
 export default {
   async fetch(request, env, ctx) {
-    const { pathname } = new URL(request.url);
+    const url = new URL(request.url);
+    const { pathname } = url;
+    if (pathname === "/") {
+      const to = OPEN[url.searchParams.get("open")];
+      if (to) return Response.redirect(to, 302);
+    }
     if (pathname === "/api/join") {
       if (request.method !== "POST") return json({ error: "method not allowed" }, 405, { allow: "POST" });
       return join(request, env, ctx);

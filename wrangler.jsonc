@@ -9,7 +9,10 @@
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./public",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // The home page goes through the Worker first, so /?open=beta can send
+    // people straight to the TestFlight invite (see src/worker.js).
+    "run_worker_first": ["/"]
   },
   "d1_databases": [
     {
